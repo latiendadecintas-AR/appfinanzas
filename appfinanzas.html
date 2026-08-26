@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Control Financiero - Multi-Cuenta</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+    :root {
+      --accent: #364CE4;
+      --accent-glow: rgba(54, 76, 228, 0.35);
+      --accent-hover: #293ac4;
+      --card-bg: rgba(255, 255, 255, 0.03);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --card-hover-border: rgba(54, 76, 228, 0.5);
+      --select-dropdown-bg: #111827;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --success: #10b981;
+      --success-bg: rgba(16, 185, 129, 0.1);
+      --danger: #ef4444;
+      --danger-bg: rgba(239, 68, 68, 0.1);
+      --input-bg: rgba(255, 255, 255, 0.05);
+    }
+
+    * {
+      box-sizing: border-box;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      background: #090d16;
+      color: var(--text-main);
+      margin: 0;
+      padding: 24px 16px;
+      min-height: 100vh;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before, body::after {
+      content: '';
+      position: absolute;
+      width: 400px;
+      height: 400px;
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--accent-glow) 0%, rgba(0,0,0,0) 70%);
+      z-index: -1;
+      pointer-events: none;
+    }
+    body::before { top: -100px; left: -100px; }
+    body::after { bottom: -100px; right: -100px; }
+
+    #login-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #090d16;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .pin-input {
+      font-size: 20px !important;
+      text-align: center;
+      margin-bottom: 16px;
+      max-width: 220px;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .header-titles h1 {
+      font-size: 26px;
+      font-weight: 800;
+      margin: 0;
+      letter-spacing: -0.5px;
+      background: linear-gradient(180deg, #ffffff 0%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .header-titles p {
+      margin: 4px 0 0 0;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    .sync-status {
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 99px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--card-border);
+    }
+
+    .filter-badge {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--card-border);
+      padding: 8px 16px;
+      border-radius: 99px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      max-width: max-content;
+    }
+    .filter-badge select {
+      background: transparent;
+      border: none;
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      outline: none;
+    }
+
+    select option {
+      background-color: var(--select-dropdown-bg) !important;
+      color: var(--text-main) !important;
+      padding: 10px;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--card-border);
+      padding: 20px;
+      border-radius: 18px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
+    }
+    .card:hover {
+      border-color: var(--card-hover-border);
+      transform: translateY(-2px);
+    }
+    .card h3 {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      margin: 0 0 10px 0;
+      font-weight: 700;
+    }
+    .card .value {
+      font-size: 28px;
+      font-weight: 800;
+      margin: 0;
+      letter-spacing: -0.5px;
+    }
+
+    .text-success { color: var(--success); }
+    .text-danger { color: var(--danger); }
+    .text-accent { color: #818cf8; }
+
+    form {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 12px;
+    }
+    input, select, button {
+      font-family: inherit;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--card-border);
+      background: var(--input-bg);
+      color: var(--text-main);
+      font-size: 14px;
+      outline: none;
+      width: 100%;
+    }
+    input:focus, select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+      background: rgba(255, 255, 255, 0.08);
+    }
+    button[type="submit"], .btn-primary {
+      background: linear-gradient(135deg, var(--accent) 0%, #4f46e5 100%);
+      color: #ffffff;
+      border: none;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 15px var(--accent-glow);
+    }
+    button[type="submit"]:hover, .btn-primary:hover {
+      background: linear-gradient(135deg, var(--accent-hover) 0%, #4338ca 100%);
+      box-shadow: 0 6px 20px rgba(54, 76, 228, 0.4);
+    }
+
+    .cat-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--card-border);
+      padding: 6px 12px;
+      border-radius: 99px;
+      font-size: 12px;
+      font-weight: 600;
+      margin: 4px;
+    }
+    .cat-tag button {
+      background: none;
+      border: none;
+      color: var(--danger);
+      padding: 0;
+      cursor: pointer;
+      font-size: 14px;
+      box-shadow: none;
+      width: auto;
+    }
+
+    .badge-cuenta {
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .cuenta-tienda { background: rgba(54, 76, 228, 0.15); color: #818cf8; border: 1px solid rgba(54, 76, 228, 0.3); }
+    .cuenta-ml { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+
+    .table-container {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+      min-width: 600px;
+    }
+    th, td {
+      padding: 14px;
+      text-align: left;
+      border-bottom: 1px solid var(--card-border);
+      font-size: 13px;
+    }
+    th {
+      color: var(--text-muted);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 700;
+    }
+    .badge-tipo {
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+    }
+    .badge-ingreso { background: var(--success-bg); color: var(--success); }
+    .badge-gasto { background: var(--danger-bg); color: var(--danger); }
+
+    .btn-delete {
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--card-border);
+      padding: 6px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      width: auto;
+    }
+    .btn-delete:hover {
+      background: var(--danger-bg);
+      color: var(--danger);
+      border-color: var(--danger);
+    }
+
+    @media (max-width: 640px) {
+      body { padding: 16px 12px; }
+      .header-titles h1 { font-size: 22px; }
+      .grid-4 { grid-template-columns: 1fr 1fr; gap: 12px; }
+      .card { padding: 16px; }
+      .card .value { font-size: 20px; }
+      form { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="login-overlay">
+  <div class="card" style="max-width: 360px; width: 100%;">
+    <h2 style="color:#fff; margin-top:0; margin-bottom: 8px;">🔒 Acceso Protegido</h2>
+    <p style="color:var(--text-muted); font-size: 14px; margin-bottom: 20px;">Ingresa la contraseña para continuar.</p>
+    
+    <form onsubmit="validarPin(event)">
+      <input type="password" id="input-pin" class="pin-input" placeholder="••••••••" required autofocus>
+      <button type="submit" class="btn-primary">Desbloquear</button>
+    </form>
+    <p id="pin-error" style="color: var(--danger); font-size: 12px; margin-top: 12px; display: none;">Contraseña incorrecta.</p>
+  </div>
+</div>
+
+<div class="container">
+  
+  <div class="header">
+    <div class="header-titles">
+      <h1>Control Financiero</h1>
+      <p>Gestión contable en vivo <span id="sync-indicator" class="sync-status">🟢 Conectado</span></p>
+    </div>
+    <div class="filter-badge">
+      <span style="font-size:13px; color: var(--text-muted);">📅 Vista:</span>
+      <select id="filtro-periodo" onchange="actualizarUI()">
+        <option value="mes">Último Mes</option>
+        <option value="anio">Último Año</option>
+        <option value="todos" selected>Histórico Total</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="grid-4">
+    <div class="card">
+      <h3>Balance Tienda Online</h3>
+      <p id="balance-tienda" class="value text-accent">$0.00</p>
+    </div>
+    <div class="card">
+      <h3>Balance MercadoLibre</h3>
+      <p id="balance-ml" class="value" style="color: #fbbf24;">$0.00</p>
+    </div>
+    <div class="card">
+      <h3>Balance Total</h3>
+      <p id="balance-neto" class="value">$0.00</p>
+    </div>
+    <div class="card">
+      <h3>Margen Neto</h3>
+      <p id="margen-ganancia" class="value text-success">0%</p>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h3>Gastos por Categoría</h3>
+      <div style="height: 220px; position: relative;"><canvas id="chartGastos"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Ingresos vs Gastos</h3>
+      <div style="height: 220px; position: relative;"><canvas id="chartBalance"></canvas></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom: 24px;">
+    <h3>Gestión de Categorías</h3>
+    <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
+      <input type="text" id="nueva-cat" placeholder="Nueva categoría" style="flex: 1; min-width: 180px;">
+      <button class="btn-primary" onclick="agregarCategoria()" style="width: auto;">+ Añadir</button>
+    </div>
+    <div id="lista-categorias"></div>
+  </div>
+
+  <div class="card" style="margin-bottom: 24px;">
+    <h3>Registrar Transacción</h3>
+    <form id="form-movimiento">
+      <select id="cuenta" required>
+        <option value="Tienda Online">Tienda Online</option>
+        <option value="MercadoLibre">MercadoLibre</option>
+      </select>
+      <select id="tipo" required>
+        <option value="ingreso">Ingreso (+)</option>
+        <option value="gasto">Gasto (-)</option>
+      </select>
+      <input type="text" id="concepto" placeholder="Concepto (ej. Venta #102)" required>
+      <select id="categoria" required></select>
+      <input type="number" id="monto" step="0.01" placeholder="Monto ($)" required>
+      <input type="date" id="fecha" required>
+      <button type="submit" id="btn-guardar">Guardar Movimiento</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h3>Historial de Movimientos</h3>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Cuenta</th>
+            <th>Concepto</th>
+            <th>Categoría</th>
+            <th>Tipo</th>
+            <th>Monto</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const _sysAuthHash = "UmFtYm8="; // "Rambo"
+  const SCRIPT_URL = "TU_URL_DE_APPS_SCRIPT_AQUI";
+
+  let categorias = JSON.parse(localStorage.getItem('fin_categorias')) || ['Ventas', 'Comisiones', 'Publicidad', 'Proveedores', 'Envíos', 'Otros'];
+  let movimientos = [];
+  let chartG, chartB;
+
+  document.getElementById('fecha').valueAsDate = new Date();
+
+  function validarPin(e) {
+    e.preventDefault();
+    const inputVal = document.getElementById('input-pin').value;
+    const errorEl = document.getElementById('pin-error');
+
+    if (btoa(inputVal) === _sysAuthHash) {
+      document.getElementById('login-overlay').style.display = 'none';
+      sessionStorage.setItem('app_desbloqueada', 'true');
+      sincronizarDesdeSheets();
+    } else {
+      errorEl.style.display = 'block';
+      document.getElementById('input-pin').value = '';
+    }
+  }
+
+  if (sessionStorage.getItem('app_desbloqueada') === 'true') {
+    document.getElementById('login-overlay').style.display = 'none';
+  }
+
+  function setStatus(text, isError = false) {
+    const el = document.getElementById('sync-indicator');
+    el.textContent = text;
+    el.style.color = isError ? '#ef4444' : '#10b981';
+  }
+
+  async function sincronizarDesdeSheets() {
+    if (!SCRIPT_URL || SCRIPT_URL === "TU_URL_DE_APPS_SCRIPT_AQUI") {
+      setStatus("🟡 Modo Local", false);
+      movimientos = JSON.parse(localStorage.getItem('fin_movimientos')) || [];
+      actualizarUI();
+      return;
+    }
+
+    try {
+      setStatus("🔄 Sincronizando...", false);
+      const res = await fetch(SCRIPT_URL);
+      const data = await res.json();
+      
+      movimientos = data.map(item => ({
+        fecha: item.fecha ? String(item.fecha).substring(0, 10) : new Date().toISOString().substring(0, 10),
+        cuenta: item.cuenta || 'Tienda Online',
+        concepto: item.concepto || '',
+        categoria: item.categoria || 'Otros',
+        tipo: String(item.tipo).toLowerCase(),
+        monto: parseFloat(item.monto) || 0
+      }));
+
+      setStatus("🟢 Conectado", false);
+      actualizarUI();
+    } catch (err) {
+      console.error("Error al obtener datos:", err);
+      setStatus("🔴 Error Sincro", true);
+    }
+  }
+
+  function initCharts() {
+    Chart.defaults.color = '#94a3b8';
+    Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.08)';
+
+    const ctxG = document.getElementById('chartGastos').getContext('2d');
+    chartG = new Chart(ctxG, {
+      type: 'doughnut',
+      data: { 
+        labels: [], 
+        datasets: [{ 
+          data: [], 
+          backgroundColor: ['#364CE4', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#64748b'],
+          borderWidth: 0
+        }] 
+      },
+      options: { responsive: true, maintainAspectRatio: false, cutout: '70%' }
+    });
+
+    const ctxB = document.getElementById('chartBalance').getContext('2d');
+    chartB = new Chart(ctxB, {
+      type: 'bar',
+      data: {
+        labels: ['Período'],
+        datasets: [
+          { label: 'Ingresos', data: [0], backgroundColor: '#10b981', borderRadius: 6 },
+          { label: 'Gastos', data: [0], backgroundColor: '#ef4444', borderRadius: 6 }
+        ]
+      },
+      options: { responsive: true, maintainAspectRatio: false }
+    });
+  }
+
+  function renderCategorias() {
+    const select = document.getElementById('categoria');
+    const container = document.getElementById('lista-categorias');
+    select.innerHTML = '';
+    container.innerHTML = '';
+
+    categorias.forEach((cat, index) => {
+      const opt = document.createElement('option');
+      opt.value = cat;
+      opt.textContent = cat;
+      select.appendChild(opt);
+
+      const tag = document.createElement('span');
+      tag.className = 'cat-tag';
+      tag.innerHTML = `${cat} <button onclick="eliminarCategoria(${index})">&times;</button>`;
+      container.appendChild(tag);
+    });
+
+    localStorage.setItem('fin_categorias', JSON.stringify(categorias));
+  }
+
+  function agregarCategoria() {
+    const input = document.getElementById('nueva-cat');
+    const val = input.value.trim();
+    if (val && !categorias.includes(val)) {
+      categorias.push(val);
+      input.value = '';
+      renderCategorias();
+    }
+  }
+
+  function eliminarCategoria(index) {
+    categorias.splice(index, 1);
+    renderCategorias();
+  }
+
+  function obtenerMovimientosFiltrados() {
+    const filtro = document.getElementById('filtro-periodo').value;
+    if (filtro === 'todos') return movimientos;
+
+    const ahora = new Date();
+    const limite = new Date();
+
+    if (filtro === 'mes') limite.setDate(ahora.getDate() - 30);
+    else if (filtro === 'anio') limite.setDate(ahora.getDate() - 365);
+
+    return movimientos.filter(m => new Date(m.fecha) >= limite);
+  }
+
+  function actualizarUI() {
+    const tbody = document.getElementById('tabla-body');
+    tbody.innerHTML = '';
+
+    let ingresosTotal = 0, gastosTotal = 0;
+    let balanceTienda = 0, balanceML = 0;
+    let gastosPorCat = {};
+
+    const datosFiltrados = obtenerMovimientosFiltrados();
+
+    datosFiltrados.forEach((m) => {
+      const indexOriginal = movimientos.indexOf(m);
+      const monto = parseFloat(m.monto);
+      const esIngreso = m.tipo === 'ingreso';
+      
+      if (esIngreso) {
+        ingresosTotal += monto;
+        if (m.cuenta === 'MercadoLibre') balanceML += monto;
+        else balanceTienda += monto;
+      } else {
+        gastosTotal += monto;
+        if (m.cuenta === 'MercadoLibre') balanceML -= monto;
+        else balanceTienda -= monto;
+        
+        gastosPorCat[m.categoria] = (gastosPorCat[m.categoria] || 0) + monto;
+      }
+
+      const claseCuenta = m.cuenta === 'MercadoLibre' ? 'cuenta-ml' : 'cuenta-tienda';
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="color:var(--text-muted);">${m.fecha}</td>
+        <td><span class="badge-cuenta ${claseCuenta}">${m.cuenta}</span></td>
+        <td style="font-weight: 600;">${m.concepto}</td>
+        <td><span class="cat-tag">${m.categoria}</span></td>
+        <td><span class="badge-tipo ${esIngreso ? 'badge-ingreso' : 'badge-gasto'}">${m.tipo.toUpperCase()}</span></td>
+        <td style="font-weight: 700;">$${monto.toFixed(2)}</td>
+        <td><button class="btn-delete" onclick="eliminarMovimiento(${indexOriginal})">Eliminar</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    const balanceTotal = ingresosTotal - gastosTotal;
+    const margen = ingresosTotal > 0 ? ((balanceTotal / ingresosTotal) * 100).toFixed(1) : 0;
+
+    document.getElementById('balance-tienda').textContent = `$${balanceTienda.toFixed(2)}`;
+    document.getElementById('balance-ml').textContent = `$${balanceML.toFixed(2)}`;
+    
+    const elBal = document.getElementById('balance-neto');
+    elBal.textContent = `$${balanceTotal.toFixed(2)}`;
+    elBal.className = `value ${balanceTotal >= 0 ? 'text-success' : 'text-danger'}`;
+    
+    document.getElementById('margen-ganancia').textContent = `${margen}%`;
+
+    chartG.data.labels = Object.keys(gastosPorCat);
+    chartG.data.datasets[0].data = Object.values(gastosPorCat);
+    chartG.update();
+
+    chartB.data.datasets[0].data = [ingresosTotal];
+    chartB.data.datasets[1].data = [gastosTotal];
+    chartB.update();
+
+    localStorage.setItem('fin_movimientos', JSON.stringify(movimientos));
+  }
+
+  document.getElementById('form-movimiento').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btn-guardar');
+    btn.disabled = true;
+    btn.textContent = "Guardando...";
+
+    const nuevoMov = {
+      cuenta: document.getElementById('cuenta').value,
+      tipo: document.getElementById('tipo').value,
+      concepto: document.getElementById('concepto').value,
+      categoria: document.getElementById('categoria').value,
+      monto: parseFloat(document.getElementById('monto').value),
+      fecha: document.getElementById('fecha').value
+    };
+
+    movimientos.unshift(nuevoMov);
+    actualizarUI();
+
+    if (SCRIPT_URL && SCRIPT_URL !== "TU_URL_DE_APPS_SCRIPT_AQUI") {
+      try {
+        await fetch(SCRIPT_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: "add", ...nuevoMov })
+        });
+        setTimeout(sincronizarDesdeSheets, 1500);
+      } catch (err) {
+        console.error("Error al enviar datos:", err);
+      }
+    }
+
+    document.getElementById('concepto').value = '';
+    document.getElementById('monto').value = '';
+    btn.disabled = false;
+    btn.textContent = "Guardar Movimiento";
+  });
+
+  async function eliminarMovimiento(index) {
+    const mov = movimientos[index];
+    movimientos.splice(index, 1);
+    actualizarUI();
+
+    if (SCRIPT_URL && SCRIPT_URL !== "TU_URL_DE_APPS_SCRIPT_AQUI") {
+      try {
+        await fetch(SCRIPT_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: "delete", ...mov })
+        });
+        setTimeout(sincronizarDesdeSheets, 1500);
+      } catch (err) {
+        console.error("Error al borrar registro:", err);
+      }
+    }
+  }
+
+  initCharts();
+  renderCategorias();
+  if (sessionStorage.getItem('app_desbloqueada') === 'true') {
+    sincronizarDesdeSheets();
+  }
+</script>
+
+</body>
+</html>
