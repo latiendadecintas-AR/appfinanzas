@@ -334,7 +334,7 @@
 
     try {
       setStatus("🔄 Sincronizando...", false);
-      const res = await fetch(SCRIPT_URL);
+      const res = await fetch(SCRIPT_URL, { redirect: "follow" });
       const data = await res.json();
       
       movimientos = data.map(item => ({
