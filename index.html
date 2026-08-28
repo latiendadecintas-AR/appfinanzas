@@ -508,13 +508,14 @@
     localStorage.setItem('fin_movimientos', JSON.stringify(movimientos));
   }
 
-  document.getElementById('form-movimiento').addEventListener('submit', async (e) => {
+document.getElementById('form-movimiento').addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('btn-guardar');
     btn.disabled = true;
     btn.textContent = "Guardando...";
 
     const nuevoMov = {
+      id: "ID-" + Date.now(), // Genera un identificador irrepetible en milisegundos
       cuenta: document.getElementById('cuenta').value,
       tipo: document.getElementById('tipo').value,
       concepto: document.getElementById('concepto').value,
