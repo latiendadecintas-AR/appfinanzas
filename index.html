@@ -168,7 +168,6 @@
       <p>Gestión contable en vivo <span id="sync-indicator" class="sync-status">🟢 Conectado</span></p>
     </div>
     
-    <!-- CONTROLES DE FILTRO -->
     <div class="filter-container">
       <div class="filter-badge">
         <span style="font-size:13px; color: var(--text-muted);">💳 Cuenta:</span>
@@ -262,7 +261,6 @@
   <div class="card">
     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
       <h3 style="margin: 0;">Historial de Movimientos</h3>
-      <!-- BÚSQUEDA EN TIEMPO REAL -->
       <div class="filter-badge" style="max-width: 250px; width: 100%;">
         <span style="font-size:13px; color: var(--text-muted);">🔍</span>
         <input type="text" id="busqueda" placeholder="Buscar concepto..." oninput="actualizarUI()">
@@ -290,7 +288,7 @@
 </div>
 
 <script>
-  const _sysAuthHash = "UmFtYm8="; //
+  const _sysAuthHash = "UmFtYm8="; 
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyIG6wwEvF4mlninn95V5D4_RJmDRRsCI3x8CwzYda1Lk9qh2A8lgq1jKnz1JaPS4Ct/exec"; 
 
   let categorias = JSON.parse(localStorage.getItem('fin_categorias')) || ['Ventas', 'Comisiones', 'Publicidad', 'Proveedores', 'Envíos', 'Otros'];
@@ -337,7 +335,9 @@
       const res = await fetch(SCRIPT_URL, { redirect: "follow" });
       const data = await res.json();
       
+      // AJUSTE CLAVE: Capturar el 'id' generado desde Google Sheets o local
       movimientos = data.map(item => ({
+        id: item.id || ("ID-" + Date.now()),
         fecha: item.fecha ? String(item.fecha).substring(0, 10) : new Date().toISOString().substring(0, 10),
         cuenta: item.cuenta || 'Tienda Online',
         concepto: item.concepto || '',
@@ -422,7 +422,6 @@
     renderCategorias();
   }
 
-  // Filtrado Avanzado: Período, Cuenta, Tipo y Búsqueda
   function obtenerMovimientosFiltrados() {
     const filtroPeriodo = document.getElementById('filtro-periodo').value;
     const filtroCuenta = document.getElementById('filtro-cuenta').value;
@@ -508,14 +507,14 @@
     localStorage.setItem('fin_movimientos', JSON.stringify(movimientos));
   }
 
-document.getElementById('form-movimiento').addEventListener('submit', async (e) => {
+  document.getElementById('form-movimiento').addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('btn-guardar');
     btn.disabled = true;
     btn.textContent = "Guardando...";
 
     const nuevoMov = {
-      id: "ID-" + Date.now(), // Genera un identificador irrepetible en milisegundos
+      id: "ID-" + Date.now(),
       cuenta: document.getElementById('cuenta').value,
       tipo: document.getElementById('tipo').value,
       concepto: document.getElementById('concepto').value,
@@ -558,7 +557,7 @@ document.getElementById('form-movimiento').addEventListener('submit', async (e) 
           method: 'POST',
           mode: 'no-cors',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: "delete", ...mov })
+          body: JSON.stringify({ action: "delete", id: mov.id, ...mov })
         });
         setTimeout(sincronizarDesdeSheets, 1500);
       } catch (err) {
