@@ -66,7 +66,6 @@
     }
     .header-titles p { margin: 4px 0 0 0; color: var(--text-muted); font-size: 13px; }
 
-    /* Estilo para la frase motivacional */
     .quote-box {
       margin-top: 8px; font-size: 13px; font-style: italic; color: #a5b4fc;
       display: inline-flex; align-items: center; gap: 6px; background: rgba(54, 76, 228, 0.08);
@@ -183,7 +182,6 @@
       <h1>Control Financiero</h1>
       <p>Gestión contable en vivo <span id="sync-indicator" class="sync-status">🟢 Conectado</span></p>
 
-      <!-- Espacio para la Frase Motivacional -->
       <div class="quote-box">
         💡 <span id="frase-emprendedor">"El secreto para salir adelante es comenzar."</span>
       </div>
@@ -324,8 +322,9 @@
   const _sysAuthHash = "UmFtYm8="; 
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyIG6wwEvF4mlninn95V5D4_RJmDRRsCI3x8CwzYda1Lk9qh2A8lgq1jKnz1JaPS4Ct/exec"; 
 
-const frasesMotivadoras = [
-  "El primer paso para la libertad financiera es gastar menos de lo que ganas.",
+  // Colección local garantizada sin errores de red externos
+  const frasesEmprendedoras = [
+    "El primer paso para la libertad financiera es gastar menos de lo que ganas.",
   "No ahorres lo que te queda después de gastar; gasta lo que te queda después de ahorrar.",
   "La inversión en conocimiento siempre paga el mejor interés.",
   "Tu activo más valioso es tu capacidad de generar ingresos; tu mayor riesgo es no educarte.",
@@ -425,7 +424,7 @@ const frasesMotivadoras = [
   "Tus decisiones de hoy determinan la calidad de tus finanzas en 10 años.",
   "El verdadero valor del dinero es la libertad que te otorga.",
   "Empieza donde estás, usa lo que tienes, haz lo que puedas."
-];
+  ];
 
   function mostrarFraseAleatoria() {
     const indice = Math.floor(Math.random() * frasesEmprendedoras.length);
