@@ -57,7 +57,7 @@
     .container { max-width: 1100px; margin: 0 auto; }
 
     .header {
-      display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;
+      display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;
     }
     .header-titles h1 {
       font-size: 26px; font-weight: 800; margin: 0; letter-spacing: -0.5px;
@@ -65,6 +65,13 @@
       -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     }
     .header-titles p { margin: 4px 0 0 0; color: var(--text-muted); font-size: 13px; }
+
+    /* Estilo para la frase motivacional */
+    .quote-box {
+      margin-top: 8px; font-size: 13px; font-style: italic; color: #a5b4fc;
+      display: inline-flex; align-items: center; gap: 6px; background: rgba(54, 76, 228, 0.08);
+      padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(54, 76, 228, 0.2);
+    }
 
     .sync-status {
       font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 99px;
@@ -175,6 +182,11 @@
     <div class="header-titles">
       <h1>Control Financiero</h1>
       <p>Gestión contable en vivo <span id="sync-indicator" class="sync-status">🟢 Conectado</span></p>
+
+      <!-- Espacio para la Frase Motivacional -->
+      <div class="quote-box">
+        💡 <span id="frase-emprendedor">"El secreto para salir adelante es comenzar."</span>
+      </div>
     </div>
     
     <div class="filter-container">
@@ -207,7 +219,6 @@
         </select>
       </div>
 
-      <!-- Campos de fecha personalizados (ocultos por defecto) -->
       <div id="contenedor-fechas-custom" class="filter-badge" style="display: none;">
         <span style="font-size:12px; color: var(--text-muted);">Desde:</span>
         <input type="date" id="filtro-desde" onchange="actualizarUI()">
@@ -215,7 +226,6 @@
         <input type="date" id="filtro-hasta" onchange="actualizarUI()">
       </div>
 
-      <!-- Botón de Exportación -->
       <button class="btn-excel" onclick="exportarExcel()">
         📊 Exportar Excel
       </button>
@@ -311,8 +321,116 @@
 </div>
 
 <script>
-  const _sysAuthHash = "UmFtYm8=";
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyIG6wwEvF4mlninn95V5D4_RJmDRRsCI3x8CwzYda1Lk9qh2A8lgq1jKnz1JaPS4Ct/exec"; 
+  const _sysAuthHash = "UmFtYm8="; 
+  const SCRIPT_URL = "TU_URL_DE_APPS_SCRIPT_AQUI"; 
+
+const frasesMotivadoras = [
+  "El primer paso para la libertad financiera es gastar menos de lo que ganas.",
+  "No ahorres lo que te queda después de gastar; gasta lo que te queda después de ahorrar.",
+  "La inversión en conocimiento siempre paga el mejor interés.",
+  "Tu activo más valioso es tu capacidad de generar ingresos; tu mayor riesgo es no educarte.",
+  "El dinero es un excelente siervo, pero un pésimo amo.",
+  "No busques el momento perfecto, toma el momento y hazlo perfecto.",
+  "El riesgo viene de no saber lo que estás haciendo.",
+  "El éxito empresarial no se mide por lo que empiezas, sino por lo que terminas.",
+  "Construye tus propios sueños o alguien más te contratará para construir los suyos.",
+  "La disciplina financiera hoy es la tranquilidad del mañana.",
+  "Un presupuesto no te dice qué no puedes comprar, te dice qué puedes lograr.",
+  "No pongas todos los huevos en la misma cesta.",
+  "El interés compuesto es la octava maravilla del mundo. Quien lo entiende, lo gana; quien no, lo paga.",
+  "El mejor momento para plantar un árbol fue hace 20 años. El segundo mejor momento es hoy.",
+  "No trabajes por el dinero; haz que el dinero trabaje para ti.",
+  "La educación formal te dará una vida; la autoeducación te dará una fortuna.",
+  "Los errores financieros son lecciones pagadas por adelantado si aprendes de ellos.",
+  "Comprar cosas que no necesitas con dinero que no tienes para impresionar a gente que no te importa es el peor negocio.",
+  "Un negocio que no produce más que dinero es un negocio pobre.",
+  "Tu libertad financiera depende de cuántos ingresos pasivos puedas construir.",
+  "El miedo a perder debe ser menor que la pasión por ganar.",
+  "La riqueza no consiste en tener muchas posesiones, sino en tener pocas necesidades.",
+  "El fracaso es simplemente la oportunidad de comenzar de nuevo, esta vez de forma más inteligente.",
+  "No evalúes tu riqueza por el dinero que ganas, sino por el tiempo que puedes vivir sin trabajar.",
+  "La paciencia y la constancia son la clave para ver crecer cualquier inversión.",
+  "Si no encuentras una manera de ganar dinero mientras duermes, trabajarás hasta que mueras.",
+  "Cuda de los pequeños gastos; un pequeño agujero hunde un barco.",
+  "La diferencia entre lo que eres y lo que quieres ser es lo que haces hoy.",
+  "Para tener éxito en los negocios, necesitas pasión, persistencia y presupuesto.",
+  "El activo más peligroso en finanzas es la impaciencia.",
+  "No busques seguridad en un empleo, busca libertad en tus habilidades.",
+  "La verdadera riqueza es el tiempo libre combinado con la paz mental.",
+  "Invierte en ti mismo antes de invertir en cualquier mercado.",
+  "Los emprendedores no esperan las oportunidades, las crean.",
+  "Controla tus emociones o el mercado controlará tu dinero.",
+  "El ahorro sin inversión es solo inflación lenta.",
+  "Tu nivel de éxito rara vez superará tu nivel de desarrollo personal.",
+  "Haz de tu presupuesto tu mapa de navegación hacia la libertad.",
+  "El mayor riesgo es no tomar ningún riesgo.",
+  "Si compras lo que no necesitas, pronto tendrás que vender lo que necesitas.",
+  "Un plan financiero sólido supera siempre a una racha de suerte.",
+  "No te compares con los demás; compara tu estado financiero de hoy con el de ayer.",
+  "La deuda buena te hace rico; la deuda mala te hace pobre.",
+  "El dinero sigue a la atención y al valor que entregas al mundo.",
+  "La innovación es lo que distingue a un líder de un seguidor.",
+  "Un fondo de emergencia no es un lujo, es tu escudo de tranquilidad.",
+  "Diversifica no solo tus inversiones, sino también tus fuentes de ingresos.",
+  "El éxito es la suma de pequeños esfuerzos repetidos día tras día.",
+  "No le temas a los números; los números te dicen la verdad de tus finanzas.",
+  "Cada peso guardado es un soldado trabajando para tu futuro.",
+  "La claridad financiera elimina el estrés de la incertidumbre.",
+  "No intentes adivinar el mercado, pasa tiempo en el mercado.",
+  "Emprender es vivir unos años como otros no quieren, para vivir el resto de tu vida como otros no pueden.",
+  "La meta no es parecer rico, es ser libre.",
+  "El conocimiento financiero transforma el trabajo duro en riqueza duradera.",
+  "La suerte favorece a la mente preparada y al bolsillo disciplinado.",
+  "Las grandes cosas en los negocios nunca las hace una sola persona, las hace un equipo.",
+  "Un hábito financiero saludable vale más que un golpe de suerte.",
+  "La mejor herramienta para crear riqueza es tu capacidad de aprender continuamente.",
+  "No dependas de un solo ingreso; diversifica antes de necesitarlo.",
+  "Págate a ti mismo primero antes de pagar cualquier otra factura.",
+  "El dinero no cambia a las personas, solo amplifica lo que ya son.",
+  "El costo de no educarte financieramente es mucho mayor que el costo de cualquier curso.",
+  "No busques ingresos rápidos; busca activos sostenibles.",
+  "Cada decisión de compra es un voto por la vida que quieres construir.",
+  "El éxito en las finanzas es un 80% comportamiento y un 20% conocimiento.",
+  "La persistencia transforma las ideas pequeñas en imperios.",
+  "Aprende a vender: la habilidad más importante de cualquier emprendedor.",
+  "Gasta con intención, invierte con visión.",
+  "No dejes que los impulsos de hoy arruinen tus metas del mañana.",
+  "Tu patrimonio neto rara vez supera tu patrimonio mental.",
+  "La consistencia le gana al talento cuando el talento no es consistente.",
+  "Un activo pone dinero en tu bolsillo; un pasivo saca dinero de él.",
+  "Analiza tus finanzas con la cabeza, no con las emociones.",
+  "El dinero no da la felicidad, pero la libertad financiera elimina muchas preocupaciones.",
+  "Cada meta financiera alcanzada empieza con la decisión de intentarlo.",
+  "Si quieres algo que nunca has tenido, tendrás que hacer algo que nunca has hecho.",
+  "El valor de una idea radica en el uso de la misma.",
+  "Asegura tus activos antes de gastar en tus lujos.",
+  "La inflación destruye el efectivo; los activos resisten la inflación.",
+  "Supera el miedo al fracaso: es el precio de entrada al éxito.",
+  "No midas el éxito por el saldo bancario, sino por la tranquilidad con la que duermes.",
+  "El dinero no crece en los árboles, pero crece con el interés compuesto.",
+  "La independencia financiera es el poder de decidir cómo usar tu tiempo.",
+  "Las crisis económicas son oportunidades para quienes están preparados.",
+  "No trabajes duro por dinero; trabaja duro para construir sistemas que generen dinero.",
+  "La mejor inversión es la que entiendes a la perfección.",
+  "Simplifica tus gastos para multiplicar tus inversiones.",
+  "La riqueza no es cuánto dinero ganas, sino cuánto conservas y cómo se multiplica.",
+  "El entusiasmo mueve negocios, pero los números sostienen empresas.",
+  "No necesitas ser un experto para empezar, pero necesitas empezar para ser un experto.",
+  "La libertad de elegir tu destino empieza por controlar tus gastos diarios.",
+  "Invierte en activos productivos, no en apariencias temporales.",
+  "Cada error financiero es una matrícula pagada en la universidad de la vida.",
+  "El presupuesto es la diferencia entre desear la riqueza y planearla.",
+  "La perseverancia es el motor de todo proyecto rentable.",
+  "No te conformes con la seguridad de hoy si frena tu potencial de mañana.",
+  "Tus decisiones de hoy determinan la calidad de tus finanzas en 10 años.",
+  "El verdadero valor del dinero es la libertad que te otorga.",
+  "Empieza donde estás, usa lo que tienes, haz lo que puedas."
+];
+
+  function mostrarFraseAleatoria() {
+    const indice = Math.floor(Math.random() * frasesEmprendedoras.length);
+    document.getElementById('frase-emprendedor').textContent = frasesEmprendedoras[indice];
+  }
 
   let categorias = JSON.parse(localStorage.getItem('fin_categorias')) || ['Ventas', 'Comisiones', 'Publicidad', 'Proveedores', 'Envíos', 'Otros'];
   let movimientos = [];
@@ -622,7 +740,6 @@
     }
   }
 
-  // Función para exportar a archivo Excel nativo (.xlsx)
   function exportarExcel() {
     const datos = obtenerMovimientosFiltrados();
 
@@ -648,6 +765,8 @@
     XLSX.writeFile(libro, `Reporte_Financiero_${fechaHoy}.xlsx`);
   }
 
+  // Inicializaciones al cargar la página
+  mostrarFraseAleatoria();
   initCharts();
   renderCategorias();
   if (sessionStorage.getItem('app_desbloqueada') === 'true') {
