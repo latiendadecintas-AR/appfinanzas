@@ -440,7 +440,16 @@
 
       let cumpleCuenta = (filtroCuenta === 'todas') || (m.cuenta === filtroCuenta);
       let cumpleTipo = (filtroTipo === 'todos') || (m.tipo === filtroTipo);
-      let cumpleBusqueda = !textoBusqueda || m.concepto.toLowerCase().includes(textoBusqueda) || m.categoria.toLowerCase().includes(textoBusqueda);
+      
+      // Búsqueda global en todos los campos visibles de la transacción
+      let cumpleBusqueda = !textoBusqueda || (
+        m.concepto.toLowerCase().includes(textoBusqueda) ||
+        m.categoria.toLowerCase().includes(textoBusqueda) ||
+        m.cuenta.toLowerCase().includes(textoBusqueda) ||
+        m.tipo.toLowerCase().includes(textoBusqueda) ||
+        m.fecha.includes(textoBusqueda) ||
+        m.monto.toString().includes(textoBusqueda)
+      );
 
       return cumpleFecha && cumpleCuenta && cumpleTipo && cumpleBusqueda;
     });
