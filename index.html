@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Control Financiero - Multi-Cuenta Pro</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Librería para exportar a Excel (.xlsx) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
@@ -69,7 +71,7 @@
       background: rgba(255,255,255,0.05); border: 1px solid var(--card-border);
     }
 
-    .filter-container { display: flex; gap: 10px; flex-wrap: wrap; }
+    .filter-container { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
     .filter-badge {
       background: var(--card-bg); backdrop-filter: blur(12px); border: 1px solid var(--card-border);
       padding: 8px 16px; border-radius: 99px; display: flex; align-items: center; gap: 10px;
@@ -109,6 +111,13 @@
     button[type="submit"]:hover, .btn-primary:hover {
       background: linear-gradient(135deg, var(--accent-hover) 0%, #4338ca 100%); box-shadow: 0 6px 20px rgba(54, 76, 228, 0.4);
     }
+
+    .btn-excel {
+      background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3);
+      font-weight: 700; cursor: pointer; padding: 8px 16px; border-radius: 99px; width: auto; font-size: 13px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .btn-excel:hover { background: rgba(16, 185, 129, 0.25); border-color: #10b981; transform: translateY(-1px); }
 
     .cat-tag {
       display: inline-flex; align-items: center; gap: 8px; background: rgba(255, 255, 255, 0.05);
@@ -189,13 +198,27 @@
       </div>
 
       <div class="filter-badge">
-        <span style="font-size:13px; color: var(--text-muted);">📅 Vista:</span>
-        <select id="filtro-periodo" onchange="actualizarUI()">
+        <span style="font-size:13px; color: var(--text-muted);">📅 Periodo:</span>
+        <select id="filtro-periodo" onchange="evaluarFiltroPeriodo()">
           <option value="mes">Último Mes</option>
           <option value="anio">Último Año</option>
           <option value="todos" selected>Histórico Total</option>
+          <option value="personalizado">Personalizado...</option>
         </select>
       </div>
+
+      <!-- Campos de fecha personalizados (ocultos por defecto) -->
+      <div id="contenedor-fechas-custom" class="filter-badge" style="display: none;">
+        <span style="font-size:12px; color: var(--text-muted);">Desde:</span>
+        <input type="date" id="filtro-desde" onchange="actualizarUI()">
+        <span style="font-size:12px; color: var(--text-muted);">Hasta:</span>
+        <input type="date" id="filtro-hasta" onchange="actualizarUI()">
+      </div>
+
+      <!-- Botón de Exportación -->
+      <button class="btn-excel" onclick="exportarExcel()">
+        📊 Exportar Excel
+      </button>
     </div>
   </div>
 
@@ -263,7 +286,7 @@
       <h3 style="margin: 0;">Historial de Movimientos</h3>
       <div class="filter-badge" style="max-width: 250px; width: 100%;">
         <span style="font-size:13px; color: var(--text-muted);">🔍</span>
-        <input type="text" id="busqueda" placeholder="Buscar concepto..." oninput="actualizarUI()">
+        <input type="text" id="busqueda" placeholder="Buscar en todo..." oninput="actualizarUI()">
       </div>
     </div>
 
@@ -288,7 +311,7 @@
 </div>
 
 <script>
-  const _sysAuthHash = "UmFtYm8="; 
+  const _sysAuthHash = "UmFtYm8=";
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyIG6wwEvF4mlninn95V5D4_RJmDRRsCI3x8CwzYda1Lk9qh2A8lgq1jKnz1JaPS4Ct/exec"; 
 
   let categorias = JSON.parse(localStorage.getItem('fin_categorias')) || ['Ventas', 'Comisiones', 'Publicidad', 'Proveedores', 'Envíos', 'Otros'];
@@ -335,7 +358,6 @@
       const res = await fetch(SCRIPT_URL, { redirect: "follow" });
       const data = await res.json();
       
-      // AJUSTE CLAVE: Capturar el 'id' generado desde Google Sheets o local
       movimientos = data.map(item => ({
         id: item.id || ("ID-" + Date.now()),
         fecha: item.fecha ? String(item.fecha).substring(0, 10) : new Date().toISOString().substring(0, 10),
@@ -422,26 +444,51 @@
     renderCategorias();
   }
 
+  function evaluarFiltroPeriodo() {
+    const selector = document.getElementById('filtro-periodo').value;
+    const contenedorCustom = document.getElementById('contenedor-fechas-custom');
+    
+    if (selector === 'personalizado') {
+      contenedorCustom.style.display = 'flex';
+    } else {
+      contenedorCustom.style.display = 'none';
+    }
+    actualizarUI();
+  }
+
   function obtenerMovimientosFiltrados() {
     const filtroPeriodo = document.getElementById('filtro-periodo').value;
     const filtroCuenta = document.getElementById('filtro-cuenta').value;
     const filtroTipo = document.getElementById('filtro-tipo').value;
     const textoBusqueda = document.getElementById('busqueda').value.toLowerCase().trim();
     
+    const fechaDesde = document.getElementById('filtro-desde').value;
+    const fechaHasta = document.getElementById('filtro-hasta').value;
+
     return movimientos.filter(m => {
       let cumpleFecha = true;
-      if (filtroPeriodo !== 'todos') {
-        const ahora = new Date();
+      const fechaMov = new Date(m.fecha + 'T00:00:00');
+
+      if (filtroPeriodo === 'mes') {
         const limite = new Date();
-        if (filtroPeriodo === 'mes') limite.setDate(ahora.getDate() - 30);
-        else if (filtroPeriodo === 'anio') limite.setDate(ahora.getDate() - 365);
-        cumpleFecha = new Date(m.fecha) >= limite;
+        limite.setDate(limite.getDate() - 30);
+        cumpleFecha = fechaMov >= limite;
+      } else if (filtroPeriodo === 'anio') {
+        const limite = new Date();
+        limite.setDate(limite.getDate() - 365);
+        cumpleFecha = fechaMov >= limite;
+      } else if (filtroPeriodo === 'personalizado') {
+        if (fechaDesde) {
+          cumpleFecha = cumpleFecha && (fechaMov >= new Date(fechaDesde + 'T00:00:00'));
+        }
+        if (fechaHasta) {
+          cumpleFecha = cumpleFecha && (fechaMov <= new Date(fechaHasta + 'T23:59:59'));
+        }
       }
 
       let cumpleCuenta = (filtroCuenta === 'todas') || (m.cuenta === filtroCuenta);
       let cumpleTipo = (filtroTipo === 'todos') || (m.tipo === filtroTipo);
       
-      // Búsqueda global en todos los campos visibles de la transacción
       let cumpleBusqueda = !textoBusqueda || (
         m.concepto.toLowerCase().includes(textoBusqueda) ||
         m.categoria.toLowerCase().includes(textoBusqueda) ||
@@ -573,6 +620,32 @@
         console.error("Error al borrar registro:", err);
       }
     }
+  }
+
+  // Función para exportar a archivo Excel nativo (.xlsx)
+  function exportarExcel() {
+    const datos = obtenerMovimientosFiltrados();
+
+    if (datos.length === 0) {
+      alert("No hay datos para exportar con los filtros actuales.");
+      return;
+    }
+
+    const datosExcel = datos.map(m => ({
+      "Fecha": m.fecha,
+      "Cuenta": m.cuenta,
+      "Concepto": m.concepto,
+      "Categoría": m.categoria,
+      "Tipo": m.tipo.toUpperCase(),
+      "Monto ($)": m.monto
+    }));
+
+    const hoja = XLSX.utils.json_to_sheet(datosExcel);
+    const libro = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(libro, hoja, "Finanzas");
+
+    const fechaHoy = new Date().toISOString().substring(0, 10);
+    XLSX.writeFile(libro, `Reporte_Financiero_${fechaHoy}.xlsx`);
   }
 
   initCharts();
