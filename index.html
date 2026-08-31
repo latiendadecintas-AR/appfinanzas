@@ -255,7 +255,13 @@
       <div style="height: 220px; position: relative;"><canvas id="chartGastos"></canvas></div>
     </div>
     <div class="card">
-      <h3>Ingresos vs Gastos</h3>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <h3 style="margin:0;">Vista de Ingresos</h3>
+        <select id="selector-vista-chart" onchange="actualizarUI()" style="width: auto; padding: 4px 8px; font-size: 11px;">
+          <option value="balance">Ingresos vs Gastos</option>
+          <option value="ingresos-cuenta">Ingresos por Cuenta</option>
+        </select>
+      </div>
       <div style="height: 220px; position: relative;"><canvas id="chartBalance"></canvas></div>
     </div>
   </div>
@@ -322,7 +328,6 @@
   const _sysAuthHash = "UmFtYm8="; 
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyIG6wwEvF4mlninn95V5D4_RJmDRRsCI3x8CwzYda1Lk9qh2A8lgq1jKnz1JaPS4Ct/exec"; 
 
-  // Colección local garantizada sin errores de red externos
   const frasesEmprendedoras = [
     "El primer paso para la libertad financiera es gastar menos de lo que ganas.",
   "No ahorres lo que te queda después de gastar; gasta lo que te queda después de ahorrar.",
@@ -669,12 +674,38 @@
     
     document.getElementById('margen-ganancia').textContent = `${margen}%`;
 
+    // Actualización de Gráfico de Gastos por Categoría
     chartG.data.labels = Object.keys(gastosPorCat);
     chartG.data.datasets[0].data = Object.values(gastosPorCat);
     chartG.update();
 
-    chartB.data.datasets[0].data = [ingresosTotal];
-    chartB.data.datasets[1].data = [gastosTotal];
+    // Actualización adaptativa del Gráfico según el selector ("Ingresos vs Gastos" o "Ingresos por Cuenta")
+    const vistaGrafico = document.getElementById('selector-vista-chart').value;
+
+    if (vistaGrafico === 'balance') {
+      chartB.data.labels = ['Período'];
+      chartB.data.datasets = [
+        { label: 'Ingresos', data: [ingresosTotal], backgroundColor: '#10b981', borderRadius: 6 },
+        { label: 'Gastos', data: [gastosTotal], backgroundColor: '#ef4444', borderRadius: 6 }
+      ];
+    } else if (vistaGrafico === 'ingresos-cuenta') {
+      let ingresosPorCuenta = { 'Tienda Online': 0, 'MercadoLibre': 0, 'Cuenta SP': 0 };
+      
+      datosFiltrados.forEach(m => {
+        if (m.tipo === 'ingreso' && ingresosPorCuenta.hasOwnProperty(m.cuenta)) {
+          ingresosPorCuenta[m.cuenta] += parseFloat(m.monto);
+        }
+      });
+
+      chartB.data.labels = Object.keys(ingresosPorCuenta);
+      chartB.data.datasets = [{
+        label: 'Ingresos ($)',
+        data: Object.values(ingresosPorCuenta),
+        backgroundColor: ['#818cf8', '#fbbf24', '#34d399'],
+        borderRadius: 6
+      }];
+    }
+
     chartB.update();
 
     localStorage.setItem('fin_movimientos', JSON.stringify(movimientos));
